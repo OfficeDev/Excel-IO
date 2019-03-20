@@ -1,3 +1,14 @@
+---
+topic: sample
+products:
+- Excel
+- Office 365
+languages:
+- C#
+extensions:
+  contentType: tools
+  createdDate: 6/7/2018 11:27:43 AM
+---
 # Excel.IO
 
 The goal of this project is to simplify reading and writing Excel workbooks so that the developer needs only pass a collection of objects to write a workbook. Likewise, when reading a workbook the developer supplies a class with properties that map to column names to read a collection of those objects from the workbook. 
