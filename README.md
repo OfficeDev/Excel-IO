@@ -1,10 +1,10 @@
 ---
 topic: sample
 products:
-- Excel
-- Office 365
+- office-excel
+- office-365
 languages:
-- C#
+- csharp
 extensions:
   contentType: tools
   createdDate: 6/7/2018 11:27:43 AM
