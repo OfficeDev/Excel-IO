@@ -186,7 +186,17 @@ namespace Excel.IO
 
                             if (propertyInfo != null)
                             {
-                                propertyInfo.SetValue(obj, Convert.ChangeType(value, propertyInfo.PropertyType));
+                                Type t = propertyInfo.PropertyType;
+                                t = Nullable.GetUnderlyingType(t) ?? t;
+
+                                if (t.IsEnum)
+                                {
+                                    propertyInfo.SetValue(obj, Enum.Parse(t, value));
+                                }
+                                else
+                                {
+                                    propertyInfo.SetValue(obj, Convert.ChangeType(value, t));
+                                }
                             }
                         }
                     }
