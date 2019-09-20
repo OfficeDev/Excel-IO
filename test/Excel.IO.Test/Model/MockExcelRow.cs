@@ -22,6 +22,8 @@ namespace Excel.IO.Test.Model
         public bool IsActive { get; set; }
 
         public decimal Balance { get; set; }
+
+        public Category Category { get; set; }
     }
 
     public class MockExcelRow2 : IExcelRow
@@ -49,5 +51,12 @@ namespace Excel.IO.Test.Model
         {
             this.SheetName = "Sheet2";
         }
+    }
+
+    public enum Category
+    {
+        CategoryA,
+        CategoryB,
+        CategoryC
     }
 }
