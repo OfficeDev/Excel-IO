@@ -65,7 +65,7 @@ excelConverter.Write(people, "C:\\somefolder\\people.xlsx");
 
 ## Example: Reading a worksheet
 
-Implement [IExcelRow](../master/src/Excel.IO/IExcelRow.cs) and define the columns of the spreadsheet as public properties (we'll just reuse the same class from above):
+Implement [IExcelRow](../master/src/Excel.IO/IExcelRow.cs) and define public properties with the same name as columns of the spreadsheet (we'll just reuse the same class from above):
 
 ```csharp
 public class Person : IExcelRow
