@@ -1,18 +1,15 @@
-﻿using Excel.IO;
-using Excel.IO.examples;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ExampleReadAndWrite
+namespace Excel.IO.Examples
 {
     class Program
     {
         static void Main(string[] args)
         {
             var excelConverter = new ExcelConverter();
-            var cwd = Directory.GetCurrentDirectory();
-            Console.WriteLine(cwd);
+            
             //Read Example            
             var people = excelConverter.Read<Person>("..\\..\\..\\people.xlsx");
 

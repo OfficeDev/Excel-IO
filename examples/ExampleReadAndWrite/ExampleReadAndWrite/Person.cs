@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Excel.IO.examples
+namespace Excel.IO.Examples
 {
     public class Person : IExcelRow
     {
