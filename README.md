@@ -11,7 +11,7 @@ extensions:
 ---
 # Excel.IO
 
-The goal of this project is to simplify reading and writing Excel workbooks so that the developer needs only pass a collection of objects to write a workbook. Likewise, when reading a workbook the developer supplies a class with properties that map to column names to read a collection of those objects from the workbook. 
+The goal of this project is to simplify reading and writing Excel workbooks so that the developer only needs to pass a collection of objects to write a workbook. Likewise, when reading a workbook the developer supplies a class with properties that map to column names to read a collection of those objects from the workbook. 
 
 Excel.IO takes a single dependency on the [Open XML SDK](https://github.com/OfficeDev/Open-XML-SDK) and targets .NET Standard 2.0
 
