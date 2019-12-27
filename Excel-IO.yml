@@ -1,0 +1,13 @@
+page_type: sample
+products:
+  - office-excel
+  - office-365
+languages:
+  - csharp
+extensions:
+  contentType: tools
+  createdDate: '6/7/2018 11:27:43 AM'
+title: Excel-IO
+description: >-
+  A utility library that makes it easy to read and write Excel workbooks using
+  C#
