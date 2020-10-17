@@ -51,15 +51,25 @@ namespace Excel.IO
                 return null;
             }
 
+            var worksheet = cell.FindParentWorksheet();
+
             if (string.IsNullOrWhiteSpace(cell.DataType))
             {
                 if (cell.StyleIndex == null ||
                        !cell.StyleIndex.HasValue)
                 {
-                    return null;
+                    // General
+
+                    if (cell.CellFormula != null)
+                    {
+                        return cell.CellValue.Text.Replace('.',',');
+                    }
+                    else
+                    {
+                        return cell.InnerText.Replace('.', ',');
+                    }
                 }
 
-                var worksheet = cell.FindParentWorksheet();
                 var document = worksheet.WorksheetPart.OpenXmlPackage as SpreadsheetDocument;
                 var styleSheet = document.WorkbookPart.WorkbookStylesPart.Stylesheet;
                 var cellStyle = styleSheet.CellFormats.ChildElements[(int)cell.StyleIndex.Value];
@@ -67,7 +77,63 @@ namespace Excel.IO
 
                 switch (((int)formatId.Value))
                 {
-                    //Date
+                    // Linked Cell
+                    case 0:
+                        return cell.CellValue.Text;
+
+                    // Numbers
+                    // TODO: Find out if only integers fall into this case, or if all numeric data types do as well
+                    case 1:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text.Replace('.', ',');
+                        }
+                        else
+                        {
+                            return cell.InnerText.Replace('.', ',');
+                        }
+
+                    // Percentage
+                    case 9:
+
+                    // Scientific Notation
+                    case 11:
+
+                    // Fraction
+                    case 10:
+                    case 12:
+                        if (cell.CellFormula != null)
+                        {
+                            return float.Parse(cell.CellValue.Text.Replace('.', ','));
+                        }
+                        else
+                        {
+                            return float.Parse(cell.InnerText.Replace('.', ','));
+                        }
+
+                    // General
+                    case 44:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text.Replace('.', ',');
+                        }
+                        else
+                        {
+                            return cell.InnerText.Replace('.', ',');
+                        }
+
+                    // Text
+                    case 49:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text;
+                        }
+                        else
+                        {
+                            return cell.InnerText;
+                        }
+
+                    // Date
                     case 14:
                     case 15:
                     case 16:
@@ -83,6 +149,24 @@ namespace Excel.IO
                     case 169:
                         cell.TryParseDate(out var date);
                         return date;
+
+                    // Phone Number
+                    // TODO: Format Phone Numbers
+                    case 165:
+                        return cell.InnerText;
+
+                    // Currency
+                    case 166:
+                        if (cell.CellFormula != null)
+                        {
+                            return decimal.Parse(cell.CellValue.Text);
+                        }
+                        else
+                        {
+                            return decimal.Parse(cell.InnerText);
+                        }
+                    default:
+                        throw new NotImplementedException($"Format with ID {(int)formatId.Value} and value {cell.CellValue?.InnerText ?? cell.InnerText} wasn't handled and needs to be parsed to the right format!");
                 }
             }
 
@@ -90,7 +174,6 @@ namespace Excel.IO
             {
                 case CellValues.SharedString:
                     {
-                        var worksheet = cell.FindParentWorksheet();
                         var sharedStringTablePart = worksheet.FindSharedStringTablePart();
 
                         if (sharedStringTablePart != null &&
