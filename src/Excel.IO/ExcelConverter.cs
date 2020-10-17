@@ -157,7 +157,7 @@ namespace Excel.IO
 
             // assume the first row contains column names
             var headerRow = true;
-            var headers = new Dictionary<string, string>();
+            var headers = new Dictionary<string, object>();
 
             foreach (var row in wsPart.Worksheet.Descendants<Row>())
             {
@@ -177,12 +177,12 @@ namespace Excel.IO
                     else
                     {
                         // look for a property on the T that matches the name (ignore SheetName)
-                        string columnHeader = null;
+                        object columnHeader = null;
 
                         if (headers.TryGetValue(column, out columnHeader))
                         {
                             var propertyInfo = properties.Where(p =>
-                                p.ResolveToNameOrDisplayName().Equals(columnHeader, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                p.ResolveToNameOrDisplayName().Equals((string)columnHeader, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
                             if (propertyInfo != null)
                             {
@@ -191,7 +191,7 @@ namespace Excel.IO
 
                                 if (t.IsEnum)
                                 {
-                                    propertyInfo.SetValue(obj, Enum.Parse(t, value));
+                                    propertyInfo.SetValue(obj, Enum.Parse(t, (string)value));
                                 }
                                 else
                                 {

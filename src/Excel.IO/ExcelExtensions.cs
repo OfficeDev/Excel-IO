@@ -44,7 +44,7 @@ namespace Excel.IO
         /// </summary>
         /// <param name="cell">The Cell to get the value for</param>
         /// <returns>The value of the Cell or null</returns>
-        public static string GetCellValue(this Cell cell)
+        public static object GetCellValue(this Cell cell)
         {
             if (cell == null)
             {
@@ -53,14 +53,37 @@ namespace Excel.IO
 
             if (string.IsNullOrWhiteSpace(cell.DataType))
             {
-                var dateString = string.Empty;
-
-                if (cell.TryParseDate(out dateString))
+                if (cell.StyleIndex == null ||
+                       !cell.StyleIndex.HasValue)
                 {
-                    return dateString;
+                    return null;
                 }
 
-                return cell.InnerText;
+                var worksheet = cell.FindParentWorksheet();
+                var document = worksheet.WorksheetPart.OpenXmlPackage as SpreadsheetDocument;
+                var styleSheet = document.WorkbookPart.WorkbookStylesPart.Stylesheet;
+                var cellStyle = styleSheet.CellFormats.ChildElements[(int)cell.StyleIndex.Value];
+                var formatId = (cellStyle as CellFormat).NumberFormatId;
+
+                switch (((int)formatId.Value))
+                {
+                    //Date
+                    case 14:
+                    case 15:
+                    case 16:
+                    case 17:
+                    case 18:
+                    case 19:
+                    case 20:
+                    case 21:
+                    case 22:
+                    case 164:
+                    case 167:
+                    case 168:
+                    case 169:
+                        cell.TryParseDate(out var date);
+                        return date;
+                }
             }
 
             switch (cell.DataType.Value)
@@ -80,11 +103,18 @@ namespace Excel.IO
                 case CellValues.Boolean:
                     {
                         return cell.InnerText == "0" ?
-                            bool.FalseString : bool.TrueString;
+                            false : true;
                     }
             }
 
-            return cell.InnerText;
+            if (cell.CellFormula != null)
+            {
+                return cell.CellValue.Text;
+            }
+            else
+            {
+                return cell.InnerText;
+            }
         }
 
         public static bool TryParseDate(this Cell cell, out DateTime? date)
