@@ -87,9 +87,9 @@ namespace Excel.IO
             return cell.InnerText;
         }
 
-        public static bool TryParseDate(this Cell cell, out string dateString)
+        public static bool TryParseDate(this Cell cell, out DateTime? date)
         {
-            dateString = null;
+            date = null;
 
             if (cell.StyleIndex == null ||
                 !cell.StyleIndex.HasValue)
@@ -97,24 +97,25 @@ namespace Excel.IO
                 return false;
             }
 
-            var worksheet = cell.FindParentWorksheet();
-            var document = worksheet.WorksheetPart.OpenXmlPackage as SpreadsheetDocument;
-            var styleSheet = document.WorkbookPart.WorkbookStylesPart.Stylesheet;
-            var cellStyle = styleSheet.CellFormats.ChildElements[(int)cell.StyleIndex.Value];
-            var formatId = (cellStyle as CellFormat).NumberFormatId;
-
             // See SpreadsheetML Reference at 18.8.30 numFmt(Number Format) for more detail: www.ecma-international.org/publications/standards/Ecma-376.htm
             // Also note some Excel specific variations            
             // The standard defines built-in format ID 14: "mm-dd-yy"; 22: "m/d/yy h:mm"; 37: "#,##0 ;(#,##0)"; 38: "#,##0 ;[Red](#,##0)"; 39: "#,##0.00;(#,##0.00)"; 40: "#,##0.00;[Red](#,##0.00)"; 47: "mmss.0"; KOR fmt 55: "yyyy-mm-dd".
             // Excel defines built-in format ID 14: "m/d/yyyy"; 22: "m/d/yyyy h:mm"; 37: "#,##0_);(#,##0)"; 38: "#,##0_);[Red](#,##0)"; 39: "#,##0.00_);(#,##0.00)"; 40: "#,##0.00_);[Red](#,##0.00)"; 47: "mm:ss.0"; KOR fmt 55: "yyyy/mm/dd".
 
-            if (dateNumberFormats.Contains((int)formatId.Value))
+            if (cell.CellFormula != null)
             {
-                dateString = DateTime.FromOADate(double.Parse(cell.InnerText)).ToString();
+                date = DateTime.FromOADate(double.Parse(cell.CellValue.Text.Replace('.', ',')));
+            }
+            else if (string.IsNullOrWhiteSpace(cell.InnerText))
+            {
+                date = DateTime.FromOADate(2);
                 return true;
             }
-
-            return false;
+            else
+            {
+                date = DateTime.FromOADate(double.Parse(cell.InnerText.Replace('.', ',')));
+            }
+            return true;
         }
 
         public static Worksheet FindParentWorksheet(this Cell cell)
