@@ -62,11 +62,11 @@ namespace Excel.IO
 
                     if (cell.CellFormula != null)
                     {
-                        return cell.CellValue.Text.Replace('.',',');
+                        return cell.CellValue.Text.ReplaceDecimalSeparator();
                     }
                     else
                     {
-                        return cell.InnerText.Replace('.', ',');
+                        return cell.InnerText.ReplaceDecimalSeparator();
                     }
                 }
 
@@ -86,11 +86,11 @@ namespace Excel.IO
                     case 1:
                         if (cell.CellFormula != null)
                         {
-                            return cell.CellValue.Text.Replace('.', ',');
+                            return cell.CellValue.Text.ReplaceDecimalSeparator();
                         }
                         else
                         {
-                            return cell.InnerText.Replace('.', ',');
+                            return cell.InnerText.ReplaceDecimalSeparator();
                         }
 
                     // Percentage
@@ -104,22 +104,22 @@ namespace Excel.IO
                     case 12:
                         if (cell.CellFormula != null)
                         {
-                            return float.Parse(cell.CellValue.Text.Replace('.', ','));
+                            return float.Parse(cell.CellValue.Text.ReplaceDecimalSeparator());
                         }
                         else
                         {
-                            return float.Parse(cell.InnerText.Replace('.', ','));
+                            return float.Parse(cell.InnerText.ReplaceDecimalSeparator());
                         }
 
                     // General
                     case 44:
                         if (cell.CellFormula != null)
                         {
-                            return cell.CellValue.Text.Replace('.', ',');
+                            return cell.CellValue.Text.ReplaceDecimalSeparator();
                         }
                         else
                         {
-                            return cell.InnerText.Replace('.', ',');
+                            return cell.InnerText.ReplaceDecimalSeparator();
                         }
 
                     // Text
@@ -217,7 +217,7 @@ namespace Excel.IO
 
             if (cell.CellFormula != null)
             {
-                date = DateTime.FromOADate(double.Parse(cell.CellValue.Text.Replace('.', ',')));
+                date = DateTime.FromOADate(double.Parse(cell.CellValue.Text.ReplaceDecimalSeparator()));
             }
             else if (string.IsNullOrWhiteSpace(cell.InnerText))
             {
@@ -226,7 +226,7 @@ namespace Excel.IO
             }
             else
             {
-                date = DateTime.FromOADate(double.Parse(cell.InnerText.Replace('.', ',')));
+                date = DateTime.FromOADate(double.Parse(cell.InnerText.ReplaceDecimalSeparator()));
             }
             return true;
         }
