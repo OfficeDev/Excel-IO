@@ -26,7 +26,7 @@ namespace Excel.IO
                 return string.Empty;
             }
 
-            return cell.CellReference?.Value?[0..^-1];
+            return cell.CellReference?.Value?[0..^1];
         }
 
         /// <summary>
