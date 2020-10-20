@@ -26,7 +26,17 @@ namespace Excel.IO
                 return string.Empty;
             }
 
-            return cell.CellReference?.Value?[0..^1];
+            var endIndex = 0;
+
+            for (int i = 0; i < cell.CellReference.Value.Length; i++)
+            {
+                if (char.IsLetter(cell.CellReference.Value[i]))
+                {
+                    endIndex = i + 1;
+                }
+            }
+
+            return cell.CellReference.Value.Substring(0, endIndex);
         }
 
         /// <summary>
