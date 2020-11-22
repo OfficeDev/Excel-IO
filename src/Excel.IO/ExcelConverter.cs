@@ -182,7 +182,7 @@ namespace Excel.IO
                         if (headers.TryGetValue(column, out columnHeader))
                         {
                             var propertyInfo = properties.Where(p =>
-                                p.ResolveToNameOrDisplayName().Equals((string)columnHeader, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                p.ResolveToNameOrDisplayName().Equals(columnHeader.ToString().Replace(" ",""), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
                             if (propertyInfo != null)
                             {

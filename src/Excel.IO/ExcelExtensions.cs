@@ -144,19 +144,19 @@ namespace Excel.IO
                     case 21:
                     case 22:
                     case 164:
-                    case 167:
-                    case 168:
+                    case 165:
+                    case 166:
                     case 169:
                         cell.TryParseDate(out var date);
                         return date;
 
                     // Phone Number
                     // TODO: Format Phone Numbers
-                    case 165:
-                        return cell.InnerText;
+                    case 168:
+                        return cell.CellValue.Text;
 
                     // Currency
-                    case 166:
+                    case 167:
                         if (cell.CellFormula != null)
                         {
                             return decimal.Parse(cell.CellValue.Text);

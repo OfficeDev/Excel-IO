@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\test.xlsx" />
-    <EmbeddedResource Include="Resources\test2.xlsx" />
   </ItemGroup>
 
   <ItemGroup>
