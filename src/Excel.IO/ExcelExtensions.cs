@@ -44,30 +44,136 @@ namespace Excel.IO
         /// </summary>
         /// <param name="cell">The Cell to get the value for</param>
         /// <returns>The value of the Cell or null</returns>
-        public static string GetCellValue(this Cell cell)
+        public static object GetCellValue(this Cell cell)
         {
             if (cell == null)
             {
                 return null;
             }
 
+            var worksheet = cell.FindParentWorksheet();
+
             if (string.IsNullOrWhiteSpace(cell.DataType))
             {
-                var dateString = string.Empty;
-
-                if (cell.TryParseDate(out dateString))
+                if (cell.StyleIndex == null ||
+                       !cell.StyleIndex.HasValue)
                 {
-                    return dateString;
+                    // General
+
+                    if (cell.CellFormula != null)
+                    {
+                        return cell.CellValue.Text.ReplaceDecimalSeparator();
+                    }
+                    else
+                    {
+                        return cell.InnerText.ReplaceDecimalSeparator();
+                    }
                 }
 
-                return cell.InnerText;
+                var document = worksheet.WorksheetPart.OpenXmlPackage as SpreadsheetDocument;
+                var styleSheet = document.WorkbookPart.WorkbookStylesPart.Stylesheet;
+                var cellStyle = styleSheet.CellFormats.ChildElements[(int)cell.StyleIndex.Value];
+                var formatId = (cellStyle as CellFormat).NumberFormatId;
+
+                switch (((int)formatId.Value))
+                {
+                    // Linked Cell
+                    case 0:
+                        return cell.CellValue.Text;
+
+                    // Numbers
+                    // TODO: Find out if only integers fall into this case, or if all numeric data types do as well
+                    case 1:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text.ReplaceDecimalSeparator();
+                        }
+                        else
+                        {
+                            return cell.InnerText.ReplaceDecimalSeparator();
+                        }
+
+                    // Percentage
+                    case 9:
+
+                    // Scientific Notation
+                    case 11:
+
+                    // Fraction
+                    case 10:
+                    case 12:
+                        if (cell.CellFormula != null)
+                        {
+                            return float.Parse(cell.CellValue.Text.ReplaceDecimalSeparator());
+                        }
+                        else
+                        {
+                            return float.Parse(cell.InnerText.ReplaceDecimalSeparator());
+                        }
+
+                    // General
+                    case 44:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text.ReplaceDecimalSeparator();
+                        }
+                        else
+                        {
+                            return cell.InnerText.ReplaceDecimalSeparator();
+                        }
+
+                    // Text
+                    case 49:
+                        if (cell.CellFormula != null)
+                        {
+                            return cell.CellValue.Text;
+                        }
+                        else
+                        {
+                            return cell.InnerText;
+                        }
+
+                    // Date
+                    case 14:
+                    case 15:
+                    case 16:
+                    case 17:
+                    case 18:
+                    case 19:
+                    case 20:
+                    case 21:
+                    case 22:
+                    case 164:
+                    case 165:
+                    case 166:
+                    case 169:
+                        cell.TryParseDate(out var date);
+                        return date;
+
+                    // Phone Number
+                    // TODO: Format Phone Numbers
+                    case 168:
+                        return cell.CellValue.Text;
+
+                    // Currency
+                    case 167:
+                        if (cell.CellFormula != null)
+                        {
+                            return decimal.Parse(cell.CellValue.Text);
+                        }
+                        else
+                        {
+                            return decimal.Parse(cell.InnerText);
+                        }
+                    default:
+                        throw new NotImplementedException($"Format with ID {(int)formatId.Value} and value {cell.CellValue?.InnerText ?? cell.InnerText} wasn't handled and needs to be parsed to the right format!");
+                }
             }
 
             switch (cell.DataType.Value)
             {
                 case CellValues.SharedString:
                     {
-                        var worksheet = cell.FindParentWorksheet();
                         var sharedStringTablePart = worksheet.FindSharedStringTablePart();
 
                         if (sharedStringTablePart != null &&
@@ -80,16 +186,23 @@ namespace Excel.IO
                 case CellValues.Boolean:
                     {
                         return cell.InnerText == "0" ?
-                            bool.FalseString : bool.TrueString;
+                            false : true;
                     }
             }
 
-            return cell.InnerText;
+            if (cell.CellFormula != null)
+            {
+                return cell.CellValue.Text;
+            }
+            else
+            {
+                return cell.InnerText;
+            }
         }
 
-        public static bool TryParseDate(this Cell cell, out string dateString)
+        public static bool TryParseDate(this Cell cell, out DateTime? date)
         {
-            dateString = null;
+            date = null;
 
             if (cell.StyleIndex == null ||
                 !cell.StyleIndex.HasValue)
@@ -97,24 +210,25 @@ namespace Excel.IO
                 return false;
             }
 
-            var worksheet = cell.FindParentWorksheet();
-            var document = worksheet.WorksheetPart.OpenXmlPackage as SpreadsheetDocument;
-            var styleSheet = document.WorkbookPart.WorkbookStylesPart.Stylesheet;
-            var cellStyle = styleSheet.CellFormats.ChildElements[(int)cell.StyleIndex.Value];
-            var formatId = (cellStyle as CellFormat).NumberFormatId;
-
             // See SpreadsheetML Reference at 18.8.30 numFmt(Number Format) for more detail: www.ecma-international.org/publications/standards/Ecma-376.htm
             // Also note some Excel specific variations            
             // The standard defines built-in format ID 14: "mm-dd-yy"; 22: "m/d/yy h:mm"; 37: "#,##0 ;(#,##0)"; 38: "#,##0 ;[Red](#,##0)"; 39: "#,##0.00;(#,##0.00)"; 40: "#,##0.00;[Red](#,##0.00)"; 47: "mmss.0"; KOR fmt 55: "yyyy-mm-dd".
             // Excel defines built-in format ID 14: "m/d/yyyy"; 22: "m/d/yyyy h:mm"; 37: "#,##0_);(#,##0)"; 38: "#,##0_);[Red](#,##0)"; 39: "#,##0.00_);(#,##0.00)"; 40: "#,##0.00_);[Red](#,##0.00)"; 47: "mm:ss.0"; KOR fmt 55: "yyyy/mm/dd".
 
-            if (dateNumberFormats.Contains((int)formatId.Value))
+            if (cell.CellFormula != null)
             {
-                dateString = DateTime.FromOADate(double.Parse(cell.InnerText)).ToString();
+                date = DateTime.FromOADate(double.Parse(cell.CellValue.Text.ReplaceDecimalSeparator()));
+            }
+            else if (string.IsNullOrWhiteSpace(cell.InnerText))
+            {
+                date = DateTime.FromOADate(2);
                 return true;
             }
-
-            return false;
+            else
+            {
+                date = DateTime.FromOADate(double.Parse(cell.InnerText.ReplaceDecimalSeparator()));
+            }
+            return true;
         }
 
         public static Worksheet FindParentWorksheet(this Cell cell)
