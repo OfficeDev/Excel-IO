@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.ComponentModel;
 
 namespace Excel.IO.Test.Model
 {
@@ -30,6 +31,7 @@ namespace Excel.IO.Test.Model
     {
         public string SheetName { get; set; }
 
+        [DisplayName("Eye Colour")]
         public string EyeColour { get; set; }
 
         public int Age { get; set; }

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using DocumentFormat.OpenXml.Spreadsheet;
 using Excel.IO.Test.Model;
 using System;
 using System.Collections.Generic;
@@ -117,7 +118,8 @@ namespace Excel.IO.Test
 
 			Assert.NotEmpty(rows);
 
-			rows.ForEach(row => {
+			rows.ForEach(row =>
+			{
 				row.GetType().GetProperties().ToList().ForEach(property =>
 				{
 					Assert.NotNull(property.GetValue(row));
@@ -146,6 +148,101 @@ namespace Excel.IO.Test
 					});
 				});
 			});
+		}
+
+		[Fact]
+		public void Cell_References_Correctly_Increment_Column_Letters()
+		{
+            var row = new Row();
+            row.RowIndex = 1;
+
+			var expectedCells = new[] { "A1", "B1", "C1", "D1" };
+
+			var actualCells = new List<string>();
+
+			for (int i = 1; i < 5; i++)
+			{
+				var cellRef = row.GetCellReference(i);
+				actualCells.Add(cellRef);
+            }
+
+			foreach (var expectedCell in expectedCells)
+			{
+				Assert.Equal(expectedCell, actualCells[Array.IndexOf(expectedCells, expectedCell)]);
+			}
+        }
+
+        [Fact]
+        public void Columns_27_And_28_Are_Handled_Correctly()
+        {
+            var row = new Row();
+            row.RowIndex = 1;
+
+            var cellRef = row.GetCellReference(27);
+            Assert.Equal("AA1", cellRef);
+
+            var cellRef2 = row.GetCellReference(28);
+            Assert.Equal("AB1", cellRef2);
+        }
+
+        [Fact]
+        public void Columns_53_And_54_Are_Handled_Correctly()
+        {
+            var row = new Row();
+            row.RowIndex = 1;
+
+            var cellRef = row.GetCellReference(53);
+            Assert.Equal("BA1", cellRef);
+
+            var cellRef2 = row.GetCellReference(54);
+            Assert.Equal("BB1", cellRef2);
+        }
+
+        [Fact]
+        public void Cell_References_Correct_Row_Number()
+        {
+            var row = new Row();
+            row.RowIndex = 4;
+            
+			var cellRef = row.GetCellReference(1);
+
+            Assert.Equal("A4", cellRef);
+        }
+
+        [Fact]
+		public void Sheets_Written_Can_Be_Read()
+		{
+			var excelConverter = new ExcelConverter();
+			var written = new[] 
+			{
+				new MockExcelRow3
+                {
+					Address = "123 Fake",
+					FirstName = "John",
+					LastName = "Doe",
+					LastContact = DateTime.Now,
+					CustomerId = 1,
+					IsActive = true,
+					Balance = 100.00m,
+					Category = Category.CategoryA
+				}
+			};
+
+            var tmpFile = Path.GetTempFileName();
+
+			try
+			{
+				excelConverter.Write(written, tmpFile);
+
+				var read = excelConverter.Read<MockExcelRow3>(tmpFile);
+
+				Assert.Equal(written.Length, read.Count());
+				Assert.Equal(written.First().Address, read.First().Address);
+			}
+			finally
+			{
+				System.IO.File.Delete(tmpFile);
+			}
 		}
 	}
 }

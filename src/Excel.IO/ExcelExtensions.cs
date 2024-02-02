@@ -11,8 +11,22 @@ namespace Excel.IO
 {
     public static class ExcelExtensions
     {
-        // These numbers are the format ids that correspond to OA dates in Excel/OOXML Spreadsheets
-        private static int[] dateNumberFormats = new int[] { 14, 15, 16, 17, 22 };
+        private static readonly char FIRST_LETTER = 'A';
+
+        public static string GetCellReference(this Row row, int columnIndex)
+        {            
+            var cellReference = string.Empty;
+
+            while (columnIndex > 0)
+            {
+                var remainder = (columnIndex - 1) % 26;
+                var letter = (char)(FIRST_LETTER + remainder);
+                cellReference = letter + cellReference;
+                columnIndex = (columnIndex - 1) / 26;
+            }
+
+            return $"{cellReference}{row.RowIndex}";
+        }
 
         /// <summary>
         /// Finds the column identifier for a given cell, ie: A
@@ -79,7 +93,7 @@ namespace Excel.IO
                 {
                     // Linked Cell
                     case 0:
-                        return cell.CellValue.Text;
+                        return cell.CellValue == null ? string.Empty : cell.CellValue.Text;
 
                     // Numbers
                     // TODO: Find out if only integers fall into this case, or if all numeric data types do as well
@@ -170,24 +184,19 @@ namespace Excel.IO
                 }
             }
 
-            switch (cell.DataType.Value)
+            if (cell.DataType.Value == CellValues.SharedString)
             {
-                case CellValues.SharedString:
-                    {
-                        var sharedStringTablePart = worksheet.FindSharedStringTablePart();
+                var sharedStringTablePart = worksheet.FindSharedStringTablePart();
 
-                        if (sharedStringTablePart != null &&
-                            sharedStringTablePart.SharedStringTable != null)
-                        {
-                            return sharedStringTablePart.SharedStringTable.ElementAt(int.Parse(cell.InnerText)).InnerText;
-                        }
-                        break;
-                    }
-                case CellValues.Boolean:
-                    {
-                        return cell.InnerText == "0" ?
-                            false : true;
-                    }
+                if (sharedStringTablePart != null &&
+                    sharedStringTablePart.SharedStringTable != null)
+                {
+                    return sharedStringTablePart.SharedStringTable.ElementAt(int.Parse(cell.InnerText)).InnerText;
+                }
+            }
+            else if (cell.DataType.Value == CellValues.Boolean)
+            {
+                return cell.InnerText == "0" ? false : true;
             }
 
             if (cell.CellFormula != null)

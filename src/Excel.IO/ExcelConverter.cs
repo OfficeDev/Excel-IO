@@ -182,7 +182,7 @@ namespace Excel.IO
                         if (headers.TryGetValue(column, out columnHeader))
                         {
                             var propertyInfo = properties.Where(p =>
-                                p.ResolveToNameOrDisplayName().Equals(columnHeader.ToString().Replace(" ",""), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                                p.ResolveToNameOrDisplayName().Equals(columnHeader.ToString(), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
 
                             if (propertyInfo != null)
                             {
@@ -224,6 +224,7 @@ namespace Excel.IO
                 sheetRow.InsertAt(
                     new Cell
                     {
+                        CellReference = sheetRow.GetCellReference(columnIndex + 1),
                         CellValue = new CellValue(cellValue == null ? string.Empty : cellValue.ToString()),
                         DataType = new EnumValue<CellValues>(this.ResolveCellType(item.PropertyType))
                     },
@@ -282,6 +283,7 @@ namespace Excel.IO
                 sheetRow.InsertAt(
                     new Cell
                     {
+                        CellReference = sheetRow.GetCellReference(columnIndex + 1),
                         CellValue = new CellValue(headerName),
                         DataType = new EnumValue<CellValues>(CellValues.String)
                     },
