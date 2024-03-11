@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace Excel.IO.Test.Model
@@ -115,8 +116,28 @@ namespace Excel.IO.Test.Model
         public Category Category6 { get; set; }
 
         public Category Category7 { get; set; }
-public MockExcelRow5() { SheetName = "Sheet3"; }
+        public MockExcelRow5() { SheetName = "Sheet3"; }
     }
+
+    public class MockExcelRow6 : IExcelRow
+    {
+        public string SheetName => "Sheet1";
+
+        [ExcelColumns]
+        public Dictionary<string, string> CustomProperties { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class MockExcelRow6ExplicitProperties : IExcelRow
+    {
+        public string SheetName => "Sheet1";
+
+        public string Key1 { get; set; }
+
+        public string Key2 { get; set; }
+
+        public string Key3 { get; set; }
+    }
+
 
     public enum Category
     {

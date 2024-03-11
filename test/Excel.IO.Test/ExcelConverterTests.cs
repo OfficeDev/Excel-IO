@@ -244,5 +244,43 @@ namespace Excel.IO.Test
 				System.IO.File.Delete(tmpFile);
 			}
 		}
-	}
+
+        [Fact]
+        public void ExcelColumnsAttribute_Correctly_WriteColumns_For_Dictionary_Keys_And_Row_Values_For_Dictionary_Value()
+        {
+            var excelConverter = new ExcelConverter();
+            var written = new[]
+            {
+                new MockExcelRow6
+                {
+                    CustomProperties = new Dictionary<string, string>
+					{
+						{ "Key1", "Value1" },
+						{ "Key2", "Value2" },
+						{ "Key3", "Value3" }
+                    }
+                }
+            };
+
+            var tmpFile = Path.GetTempFileName();
+
+            try
+            {
+                excelConverter.Write(written, tmpFile);
+                
+				var read = excelConverter.Read<MockExcelRow6ExplicitProperties>(tmpFile);
+
+				Assert.Equal(written.Length, read.Count());
+
+				//it's implied that the header is being written correctly as the Key1, Key2, Key3 can only be read if the header is written correctly
+				Assert.Equal(written.First().CustomProperties.First().Value, read.First().Key1);
+                Assert.Equal(written.First().CustomProperties.Skip(1).First().Value, read.First().Key2);
+                Assert.Equal(written.First().CustomProperties.Skip(2).First().Value, read.First().Key3);
+            }
+            finally
+            {
+                System.IO.File.Delete(tmpFile);
+            }
+        }
+    }
 }

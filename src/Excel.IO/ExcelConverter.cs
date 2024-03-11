@@ -84,7 +84,7 @@ namespace Excel.IO
 
                     if (!headerWritten)
                     {
-                        this.WriteHeader(validProperties, sheetRow);
+                        this.WriteHeader(validProperties, sheetRow, row);
 
                         headerWritten = true;
                         rowIndex++;
@@ -94,6 +94,7 @@ namespace Excel.IO
                     }
 
                     this.WriteCells(validProperties, sheetRow, row);
+                    
                     rowIndex++;
                 }
             }
@@ -219,6 +220,14 @@ namespace Excel.IO
 
             foreach (var item in properties)
             {
+                var result = _TryInsertExcelColumn(sheetRow, userRow, columnIndex, item, isHeader: false);
+
+                if (result.IsExcelColumn)
+                {
+                    columnIndex = result.ColumnIndex;
+                    continue;
+                }
+
                 var cellValue = item.GetValue(userRow);
 
                 sheetRow.InsertAt(
@@ -264,16 +273,23 @@ namespace Excel.IO
             }
         }
 
-        private void WriteHeader(IEnumerable<PropertyInfo> properties, Row sheetRow)
+        private void WriteHeader(IEnumerable<PropertyInfo> properties, Row sheetRow, IExcelRow userRow)
         {
             var columnIndex = 0;
 
             foreach (var item in properties)
             {
+                var result = _TryInsertExcelColumn(sheetRow, userRow, columnIndex, item, isHeader: true);
+
+                if (result.IsExcelColumn)
+                {
+                    columnIndex = result.ColumnIndex;
+                    continue;
+                }
+
                 var headerName = item.Name;
 
-                // TODO: support localisation
-                var displayNameAttr = item.GetCustomAttributes(typeof(System.ComponentModel.DisplayNameAttribute), true).Cast<System.ComponentModel.DisplayNameAttribute>().FirstOrDefault();
+                var displayNameAttr = item.GetCustomAttribute<System.ComponentModel.DisplayNameAttribute>(true);
 
                 if (displayNameAttr != null)
                 {
@@ -291,6 +307,56 @@ namespace Excel.IO
 
                 columnIndex++;
             }
+        }
+
+        private InsertExcelColumnResult _TryInsertExcelColumn(Row sheetRow, IExcelRow row, int columnIndex, PropertyInfo item, bool isHeader)
+        {
+            var excelColumnsAttr = item.GetCustomAttribute<ExcelColumnsAttribute>(true);
+
+            if (excelColumnsAttr != null)
+            {
+                var dict = (IDictionary<string, string>)item.GetValue(row);
+
+                if (dict != null)
+                {
+                    foreach (var kvp in dict)
+                    {
+                        sheetRow.InsertAt(
+                            new Cell
+                            {
+                                CellReference = sheetRow.GetCellReference(columnIndex + 1),
+                                CellValue = new CellValue(isHeader ?
+                                    kvp.Key :
+                                        kvp.Value == null ?
+                                            string.Empty : kvp.Value),
+                                DataType = new EnumValue<CellValues>(isHeader ?
+                                    CellValues.String :
+                                    this.ResolveCellType(item.PropertyType))
+                            },
+                            columnIndex);
+
+                        columnIndex++;
+                    }
+
+                    return new InsertExcelColumnResult { IsExcelColumn = true, ColumnIndex = columnIndex };
+                }
+            }
+
+            return InsertExcelColumnResult.IsNotExcelColumn;
+        }
+
+        private class InsertExcelColumnResult
+        {
+            private static readonly InsertExcelColumnResult _IsNotExcelColumn = new InsertExcelColumnResult { IsExcelColumn = false };
+
+            public static InsertExcelColumnResult IsNotExcelColumn
+            {
+                get { return _IsNotExcelColumn; }
+            }
+
+            public int ColumnIndex { get; set; }
+
+            public bool IsExcelColumn { get; set; }
         }
 
         private class SimpleComparer : IEqualityComparer<PropertyInfo>
