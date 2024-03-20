@@ -282,5 +282,63 @@ namespace Excel.IO.Test
                 System.IO.File.Delete(tmpFile);
             }
         }
+
+		[Fact]
+		public void Appending_Is_Successful_When_The_File_To_Append_To_Does_Not_Already_Exist()
+		{
+			var excelConverter = new ExcelConverter();
+			var expected = new MockExcelRow6ExplicitProperties { Key1 = "a", Key2 = "b", Key3 = "c" };
+
+			var tmpFile = Path.GetTempFileName();
+
+			using (var fileStreamWrite = new FileStream(tmpFile, FileMode.Create))
+			{
+				excelConverter.Append(expected, fileStreamWrite);
+			}
+
+			using (var fileStreamRead = new FileStream(tmpFile, FileMode.Open))
+			{
+				var actual = excelConverter.Read<MockExcelRow6ExplicitProperties>(fileStreamRead);
+
+				Assert.Equal(expected.Key1, actual.First().Key1);
+				Assert.Equal(expected.Key2, actual.First().Key2);
+				Assert.Equal(expected.Key3, actual.First().Key3);
+			}
+		}
+
+        [Fact]
+        public void Appending_Is_Successful_When_The_File_To_Append_To_Does_Already_Exist()
+        {
+            var excelConverter = new ExcelConverter();
+            var expectedRow1 = new MockExcelRow6ExplicitProperties { Key1 = "a", Key2 = "b", Key3 = "c" };
+            var expectedRow2 = new MockExcelRow6ExplicitProperties { Key1 = "d", Key2 = "e", Key3 = "f" };
+
+            var tmpFile = Path.GetTempFileName();
+
+            using (var fileStreamWrite1 = new FileStream(tmpFile, FileMode.Create))
+            {
+                excelConverter.Append(expectedRow1, fileStreamWrite1);
+            }
+
+            using (var fileStreamWrite2 = new FileStream(tmpFile, FileMode.Open))
+            {
+                excelConverter.Append(expectedRow2, fileStreamWrite2);
+            }
+
+            using (var fileStreamRead = new FileStream(tmpFile, FileMode.Open))
+            {
+                var rows = excelConverter.Read<MockExcelRow6ExplicitProperties>(fileStreamRead);
+				var actualRow1 = rows.First();
+				var actualRow2 = rows.Skip(1).First();
+
+                Assert.Equal(expectedRow1.Key1, actualRow1.Key1);
+                Assert.Equal(expectedRow1.Key2, actualRow1.Key2);
+                Assert.Equal(expectedRow1.Key3, actualRow1.Key3);
+
+				Assert.Equal(expectedRow2.Key1, actualRow2.Key1);
+				Assert.Equal(expectedRow2.Key2, actualRow2.Key2);
+				Assert.Equal(expectedRow2.Key3, actualRow2.Key3);
+            }
+        }
     }
 }

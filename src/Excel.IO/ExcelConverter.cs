@@ -17,6 +17,26 @@ namespace Excel.IO
     /// </summary>
     public class ExcelConverter : IExcelConverter
     {
+        private SpreadsheetDocument _GetDocument(Stream stream)
+        {
+            var spreadsheetDocument = SpreadsheetDocument.Open(stream, isEditable: true);
+
+            if (spreadsheetDocument.WorkbookPart == null)
+            {
+                return SpreadsheetDocument.Create(stream, SpreadsheetDocumentType.Workbook);
+            }
+
+            return spreadsheetDocument;            
+        }
+
+        public void Append(IExcelRow row, Stream outputStream)
+        {
+            using (var spreadsheetDocument = _GetDocument(outputStream))
+            {
+                this.Write([row], spreadsheetDocument);
+            }
+        }
+
         /// <summary>
         /// Exports the given rows to an Excel workbook
         /// </summary>
@@ -45,34 +65,57 @@ namespace Excel.IO
 
         private void Write(IEnumerable<IExcelRow> rows, SpreadsheetDocument spreadsheetDocument)
         {
-            var workbookpart = spreadsheetDocument.AddWorkbookPart();
-            workbookpart.Workbook = new Workbook();
+            if (spreadsheetDocument.WorkbookPart == null)
+            {
+                var workbookpart = spreadsheetDocument.AddWorkbookPart();
+                workbookpart.Workbook = new Workbook();
+            }
 
-            var sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild(new Sheets());
+            var sheets = spreadsheetDocument.WorkbookPart.Workbook.Sheets;
 
-            // generate worksheets
+            if (sheets == null)
+            {
+                sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild(new Sheets());
+            }
+
             var rowsGroupedBySheet = rows.GroupBy(r => r.SheetName);
 
             uint sheetId = 1;
 
             foreach (var rowGroup in rowsGroupedBySheet)
             {
-                var worksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
-                worksheetPart.Worksheet = new Worksheet(new SheetData());
-
-                var relationshipIdPart = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart);
-                var sheet = new Sheet() { Id = relationshipIdPart, SheetId = sheetId, Name = rowGroup.Key };
-
-                sheets.Append(sheet);
-                sheetId++;
-
-                // write rows to this sheet
-                var propertiesToIgnore = typeof(IExcelRow).GetProperties();
+                var sheetData = default(SheetData);
                 var headerWritten = false;
-
                 uint rowIndex = 1;
 
-                var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+                var existingSheet = sheets.ChildElements.OfType<Sheet>().FirstOrDefault(s => s.Name == rowGroup.Key);
+
+                if (existingSheet == null)
+                {
+                    var worksheetPart = spreadsheetDocument.WorkbookPart.AddNewPart<WorksheetPart>();
+                    worksheetPart.Worksheet = new Worksheet(new SheetData());
+
+                    var relationshipIdPart = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart);
+                    var sheet = new Sheet() { Id = relationshipIdPart, SheetId = sheetId, Name = rowGroup.Key };
+
+                    sheets.Append(sheet);
+                    sheetId++;
+
+                    sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+                }
+                else
+                {
+                    var worksheetPart = (WorksheetPart)spreadsheetDocument.WorkbookPart.GetPartById(existingSheet.Id);
+                    sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();                                       
+
+                    // get the correct row to write to
+                    var lastSheetRow = sheetData.ChildElements.OfType<Row>().Last();
+                    rowIndex = lastSheetRow.RowIndex + 1;
+                    headerWritten = true;
+                }
+
+                // write rows to this sheet
+                var propertiesToIgnore = typeof(IExcelRow).GetProperties();                                
 
                 foreach (var row in rowGroup)
                 {
